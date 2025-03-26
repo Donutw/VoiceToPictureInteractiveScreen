@@ -1,8 +1,10 @@
 Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
     Properties {
         _MainTex("Main Texture", 2D) = "white" {}
+        _StarTex("Star Texture", 2D) = "white" {}
         scale("Scale", Float) = 1.0
         _Blend("Blend Factor", Range(0,1)) = 0.5
+        _GlowIntensity("Glow Intensity", Range(1, 5)) = 1.5
     }
     SubShader {
         Tags { "RenderType"="Transparent" "Queue"="Transparent" }
@@ -25,7 +27,9 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
             float scale;
             float velocityMax;       // 传入的最大速度值，用于归一化速度
             float _Blend;            // 控制图片色与渐变色混合比例（0～1）
+            float _GlowIntensity;
 
+            sampler2D _StarTex;
             sampler2D _MainTex;
             Texture2D<float4> ColourMap;
             SamplerState linear_clamp_sampler;
@@ -72,7 +76,7 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
                 float2 centreOffset = (i.localUV - 0.5) * 2;  // 转换到 [-1,1] 范围
                 float sqrDst = dot(centreOffset, centreOffset);
                 float delta = fwidth(sqrt(sqrDst));
-                float mask = 1 - smoothstep(1 - delta, 1 + delta, sqrDst);
+                //float mask = 1 - smoothstep(1 - delta, 1 + delta, sqrDst);
 
                 // 从 _MainTex 中采样图片颜色，使用每个粒子的全局采样 UV
                 float4 imageColor = tex2D(_MainTex, i.instanceUV);
@@ -82,8 +86,15 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
                 // 混合图片颜色和渐变颜色，混合比例由 _Blend 控制（0=全图片色，1=全渐变色）
                 float4 finalColor = imageColor * lerp(float4(1,1,1,1), gradColor, _Blend);
 
+                //新增粒子纹理采样
+                  float4 starTexture = tex2D(_StarTex, i.localUV);
+                  finalColor *= starTexture;
+
+                  //额外增加自发光强度（中心更亮）
+                  finalColor.rgb *= lerp(_GlowIntensity, 1.0, starTexture.a);
                 // 将混合后的颜色的 alpha 乘以圆形遮罩，使得粒子呈现圆形
-                finalColor.a *= mask;
+                //finalColor.a *= mask;
+
                 return finalColor;
             }
             ENDCG
