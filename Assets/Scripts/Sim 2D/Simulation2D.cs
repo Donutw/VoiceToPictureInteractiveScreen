@@ -51,6 +51,8 @@ public class Simulation2D : MonoBehaviour
     ParticleSpawner.ParticleSpawnData spawnData;
     bool pauseNextFrame;
 
+    ComputeBuffer uvBuffer; // 新增uv buffer定义
+
     public int numParticles { get; private set; }
 
 

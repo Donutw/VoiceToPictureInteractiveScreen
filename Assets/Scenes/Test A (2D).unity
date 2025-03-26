@@ -149,13 +149,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 271053315}
-  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &271053319
 MonoBehaviour:
@@ -172,14 +172,14 @@ MonoBehaviour:
   timeScale: 1
   fixedTimeStep: 0
   iterationsPerFrame: 3
-  gravity: -12
-  collisionDamping: 0.95
+  gravity: 0
+  collisionDamping: 0.96
   smoothingRadius: 0.35
   targetDensity: 55
-  pressureMultiplier: 500
+  pressureMultiplier: 100
   nearPressureMultiplier: 18
-  viscosityStrength: 0.06
-  boundsSize: {x: 17.1, y: 9.3}
+  viscosityStrength: 0.15
+  boundsSize: {x: 17.9, y: 9.3}
   obstacleSize: {x: 0, y: 0}
   obstacleCentre: {x: 0, y: 0}
   interactionRadius: 2
@@ -199,7 +199,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 895837b52d5fc53409ded3589d4da696, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleCount: 4032
+  particleCount: 8000
   initialVelocity: {x: 0, y: 0}
   spawnCentre: {x: 3.35, y: 0.51}
   spawnSize: {x: 7, y: 7}
@@ -219,7 +219,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   shader: {fileID: 4800000, guid: 441b7193936682446b30d2140d15792a, type: 3}
-  scale: 0.08
+  scale: 0.15
   colourMap:
     serializedVersion: 2
     key0: {r: 0.13363299, g: 0.34235913, b: 0.7264151, a: 1}
@@ -336,17 +336,11 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1660057539 &9223372036854775807
-SceneRoots:
-  m_ObjectHideFlags: 0
-  m_Roots:
-  - {fileID: 963194228}
-  - {fileID: 271053318}

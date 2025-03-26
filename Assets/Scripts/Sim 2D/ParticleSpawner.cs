@@ -46,13 +46,16 @@ public class ParticleSpawner : MonoBehaviour
     {
         public float2[] positions;
         public float2[] velocities;
+        public float2[] uvs; // 新增加的UV坐标数组
 
         public ParticleSpawnData(int num)
         {
             positions = new float2[num];
             velocities = new float2[num];
+            uvs = new float2[num]; // 初始化UV坐标
         }
     }
+
 
     void OnDrawGizmos()
     {
