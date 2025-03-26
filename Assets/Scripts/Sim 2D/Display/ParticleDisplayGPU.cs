@@ -5,6 +5,7 @@ public class ParticleDisplay2D : MonoBehaviour
 	public Mesh mesh;
 	public Shader shader;
 	public float scale;
+	public float blend;
 	public Gradient colourMap;
 	public int gradientResolution;
 	public float velocityDisplayMax;
@@ -18,12 +19,15 @@ public class ParticleDisplay2D : MonoBehaviour
 
 	public void Init(Simulation2D sim)
 	{
-		material = new Material(shader);
-		material.SetBuffer("Positions2D", sim.positionBuffer);
+        material = new Material(shader);
+        material.SetBuffer("Positions2D", sim.positionBuffer);
 		material.SetBuffer("Velocities", sim.velocityBuffer);
 		material.SetBuffer("DensityData", sim.densityBuffer);
 
-		argsBuffer = ComputeHelper.CreateArgsBuffer(mesh, sim.positionBuffer.count);
+        // 新增的UV坐标数据传递
+        material.SetBuffer("UVs", sim.uvBuffer);
+
+        argsBuffer = ComputeHelper.CreateArgsBuffer(mesh, sim.positionBuffer.count);
 		bounds = new Bounds(Vector3.zero, Vector3.one * 10000);
 	}
 
@@ -46,8 +50,9 @@ public class ParticleDisplay2D : MonoBehaviour
 
 			material.SetFloat("scale", scale);
 			material.SetFloat("velocityMax", velocityDisplayMax);
-		}
-	}
+            material.SetFloat("_Blend", blend);
+        }
+    }
 
 	public static void TextureFromGradient(ref Texture2D texture, int width, Gradient gradient, FilterMode filterMode = FilterMode.Bilinear)
 	{

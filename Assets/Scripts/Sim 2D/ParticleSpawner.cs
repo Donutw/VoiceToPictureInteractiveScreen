@@ -35,6 +35,10 @@ public class ParticleSpawner : MonoBehaviour
                 Vector2 jitter = dir * jitterStr * ((float)rng.NextDouble() - 0.5f);
                 data.positions[i] = new Vector2((tx - 0.5f) * spawnSize.x, (ty - 0.5f) * spawnSize.y) + jitter + spawnCentre;
                 data.velocities[i] = initialVelocity;
+
+                // 新增的UV坐标赋值
+                data.uvs[i] = new float2(tx, ty);
+
                 i++;
             }
         }

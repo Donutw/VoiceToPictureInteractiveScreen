@@ -51,7 +51,7 @@ public class Simulation2D : MonoBehaviour
     ParticleSpawner.ParticleSpawnData spawnData;
     bool pauseNextFrame;
 
-    ComputeBuffer uvBuffer; // 新增uv buffer定义
+    public ComputeBuffer uvBuffer; // 新增uv buffer定义
 
     public int numParticles { get; private set; }
 
@@ -192,6 +192,10 @@ public class Simulation2D : MonoBehaviour
         positionBuffer.SetData(allPoints);
         predictedPositionBuffer.SetData(allPoints);
         velocityBuffer.SetData(spawnData.velocities);
+
+        // 新增的UV坐标buffer传递
+        uvBuffer = ComputeHelper.CreateStructuredBuffer<float2>(spawnData.uvs.Length);
+        uvBuffer.SetData(spawnData.uvs);
     }
 
     void HandleInput()

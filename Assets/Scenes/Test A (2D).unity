@@ -199,11 +199,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 895837b52d5fc53409ded3589d4da696, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleCount: 8000
+  particleCount: 11520
   initialVelocity: {x: 0, y: 0}
-  spawnCentre: {x: 3.35, y: 0.51}
-  spawnSize: {x: 7, y: 7}
-  jitterStr: 0.025
+  spawnCentre: {x: 0, y: 0}
+  spawnSize: {x: 16, y: 9}
+  jitterStr: 0.01
   showSpawnBoundsGizmos: 1
 --- !u!114 &271053323
 MonoBehaviour:
@@ -218,23 +218,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
-  shader: {fileID: 4800000, guid: 441b7193936682446b30d2140d15792a, type: 3}
-  scale: 0.15
+  shader: {fileID: 4800000, guid: e2d2cea50a27c2b47a7e6cf3f01268dc, type: 3}
+  scale: 0.12
+  blend: 0.5
   colourMap:
     serializedVersion: 2
-    key0: {r: 0.13363299, g: 0.34235913, b: 0.7264151, a: 1}
-    key1: {r: 0.2980392, g: 1, b: 0.56327766, a: 1}
-    key2: {r: 1, g: 0.9309917, b: 0, a: 0}
-    key3: {r: 0.96862745, g: 0.28555763, b: 0.031372573, a: 0}
-    key4: {r: 0, g: 0, b: 0, a: 0}
+    key0: {r: 0.9791351, g: 0.7216981, b: 1, a: 1}
+    key1: {r: 0.514151, g: 0.5148177, b: 1, a: 1}
+    key2: {r: 0.5835424, g: 0.8235294, b: 0.4862745, a: 0}
+    key3: {r: 0.87058824, g: 0.70804965, b: 0.2862745, a: 0}
+    key4: {r: 1, g: 0.3820755, b: 0.3820755, a: 0}
     key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
-    ctime0: 4064
-    ctime1: 33191
-    ctime2: 46738
-    ctime3: 65535
-    ctime4: 0
+    ctime0: 1349
+    ctime1: 17155
+    ctime2: 33346
+    ctime3: 49922
+    ctime4: 65535
     ctime5: 0
     ctime6: 0
     ctime7: 0
@@ -248,7 +249,7 @@ MonoBehaviour:
     atime7: 0
     m_Mode: 2
     m_ColorSpace: -1
-    m_NumColorKeys: 4
+    m_NumColorKeys: 5
     m_NumAlphaKeys: 2
   gradientResolution: 64
   velocityDisplayMax: 6.5
