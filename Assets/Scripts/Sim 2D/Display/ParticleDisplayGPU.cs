@@ -16,8 +16,15 @@ public class ParticleDisplay2D : MonoBehaviour
 	Texture2D gradientTexture;
 	bool needsUpdate;
 
+    // 新增属性，决定投影模式
+    public enum ProjectionMode { ParticleUV = 0, WorldProjection = 1 };
+    public ProjectionMode projectionMode;
+    // 粒子区域边界 (根据你的粒子初始分布区域填写或计算)
+    public Vector2 projectionMinBounds = new Vector2(-10, -10);
+    public Vector2 projectionSizeBounds = new Vector2(20, 20);
 
-	public void Init(Simulation2D sim)
+
+    public void Init(Simulation2D sim)
 	{
         material = new Material(shader);
         material.SetBuffer("Positions2D", sim.positionBuffer);
@@ -51,6 +58,12 @@ public class ParticleDisplay2D : MonoBehaviour
 			material.SetFloat("scale", scale);
 			material.SetFloat("velocityMax", velocityDisplayMax);
             material.SetFloat("_Blend", blend);
+            // 新增：切换投影模式
+            material.SetInt("_ProjectionMode", (int)projectionMode);
+            material.SetVector("_ProjectionBounds", new Vector4(
+            projectionMinBounds.x, projectionMinBounds.y,
+            projectionSizeBounds.x, projectionSizeBounds.y
+        ));
         }
     }
 

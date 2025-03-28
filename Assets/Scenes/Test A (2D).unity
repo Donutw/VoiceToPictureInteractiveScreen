@@ -199,7 +199,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 895837b52d5fc53409ded3589d4da696, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleCount: 11520
+  particleCount: 28800
   initialVelocity: {x: 0, y: 0}
   spawnCentre: {x: 0, y: 0}
   spawnSize: {x: 16, y: 9}
@@ -219,23 +219,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   shader: {fileID: 4800000, guid: e2d2cea50a27c2b47a7e6cf3f01268dc, type: 3}
-  scale: 0.12
+  scale: 0.18
   blend: 0.5
   colourMap:
     serializedVersion: 2
-    key0: {r: 0.9791351, g: 0.7216981, b: 1, a: 1}
-    key1: {r: 0.514151, g: 0.5148177, b: 1, a: 1}
-    key2: {r: 0.5835424, g: 0.8235294, b: 0.4862745, a: 0}
-    key3: {r: 0.87058824, g: 0.70804965, b: 0.2862745, a: 0}
-    key4: {r: 1, g: 0.3820755, b: 0.3820755, a: 0}
+    key0: {r: 1, g: 1, b: 1, a: 1}
+    key1: {r: 0.6367924, g: 0.78465676, b: 1, a: 1}
+    key2: {r: 0.88310736, g: 0.6933962, b: 1, a: 0}
+    key3: {r: 0, g: 0, b: 0, a: 0}
+    key4: {r: 0, g: 0, b: 0, a: 0}
     key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
-    ctime0: 1349
-    ctime1: 17155
-    ctime2: 33346
-    ctime3: 49922
-    ctime4: 65535
+    ctime0: 578
+    ctime1: 33924
+    ctime2: 65535
+    ctime3: 0
+    ctime4: 0
     ctime5: 0
     ctime6: 0
     ctime7: 0
@@ -249,10 +249,13 @@ MonoBehaviour:
     atime7: 0
     m_Mode: 2
     m_ColorSpace: -1
-    m_NumColorKeys: 5
+    m_NumColorKeys: 3
     m_NumAlphaKeys: 2
   gradientResolution: 64
   velocityDisplayMax: 6.5
+  projectionMode: 1
+  projectionMinBounds: {x: -9, y: -4.7}
+  projectionSizeBounds: {x: 18, y: 9.4}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0

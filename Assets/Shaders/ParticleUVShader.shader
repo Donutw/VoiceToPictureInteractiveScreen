@@ -5,6 +5,9 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
         scale("Scale", Float) = 1.0
         _Blend("Blend Factor", Range(0,1)) = 0.5
         _GlowIntensity("Glow Intensity", Range(1, 5)) = 1.5
+        _ProjectionMode("Projection Mode (0=Particle UV, 1=World Projection)", Int) = 0
+        _ProjectionBounds("Projection Bounds (xy: min, zw: size)", Vector) = (-10,-10,20,20)
+
     }
     SubShader {
         Tags { "RenderType"="Transparent" "Queue"="Transparent" }
@@ -28,6 +31,9 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
             float velocityMax;       // 传入的最大速度值，用于归一化速度
             float _Blend;            // 控制图片色与渐变色混合比例（0～1）
             float _GlowIntensity;
+            int _ProjectionMode;         // 投影模式控制变量
+            float4 _ProjectionBounds;    // 投影区域定义 (minX,minY,sizeX,sizeY)
+
 
             sampler2D _StarTex;
             sampler2D _MainTex;
@@ -52,7 +58,20 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
                 v2f o;
                 // 从 Buffer 中取出每个粒子的中心位置和用于采样图片的 UV
                 float2 particlePos = Positions2D[instanceID];
-                float2 instUV = UVs[instanceID];
+                float2 instUV;
+
+                if (_ProjectionMode == 0) {
+                    // 方式1: 粒子自带UV
+                    instUV = UVs[instanceID];
+                }
+                else {
+                    // 方式2: 根据粒子位置计算整体投影UV
+                    float2 particlePos = Positions2D[instanceID];
+                    float2 minBound = _ProjectionBounds.xy;
+                    float2 sizeBound = _ProjectionBounds.zw;
+
+                    instUV = (particlePos - minBound) / sizeBound;
+                }
 
                 float3 centreWorld = float3(particlePos, 0);
                 // 计算当前粒子四边形顶点的世界位置：
