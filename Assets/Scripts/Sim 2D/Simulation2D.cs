@@ -37,6 +37,7 @@ public class Simulation2D : MonoBehaviour
     ComputeBuffer predictedPositionBuffer;
     ComputeBuffer spatialIndices;
     ComputeBuffer spatialOffsets;
+    ComputeBuffer initialPositionBuffer;
     GPUSort gpuSort;
 
     // Kernel IDs
@@ -52,6 +53,7 @@ public class Simulation2D : MonoBehaviour
     bool isPaused;
     ParticleSpawner.ParticleSpawnData spawnData;
     bool pauseNextFrame;
+    [HideInInspector] public bool enableSmoothReturn; // 控制平滑返回开关（B键控制）
 
     public ComputeBuffer uvBuffer; // 新增uv buffer定义
 
@@ -63,6 +65,9 @@ public class Simulation2D : MonoBehaviour
     public float noiseStrength = 1.0f;
     public float noiseSpeed = 0.5f;
 
+    [Header("Restore Settings")]
+    public float smoothReturnSpeed = 2.0f; // 控制平滑插值速度，越大返回越快（推荐1~5）
+    public float stopThreshold = 0.8f;
 
     void Start()
     {
@@ -81,6 +86,7 @@ public class Simulation2D : MonoBehaviour
         densityBuffer = ComputeHelper.CreateStructuredBuffer<float2>(numParticles);
         spatialIndices = ComputeHelper.CreateStructuredBuffer<uint3>(numParticles);
         spatialOffsets = ComputeHelper.CreateStructuredBuffer<uint>(numParticles);
+        initialPositionBuffer = ComputeHelper.CreateStructuredBuffer<float2>(spawnData.positions);
 
         // Set buffer data
         SetInitialBufferData(spawnData);
@@ -89,6 +95,8 @@ public class Simulation2D : MonoBehaviour
 
         flowNoiseCompute.SetBuffer(flowKernelID, "Positions", positionBuffer);
         flowNoiseCompute.SetBuffer(flowKernelID, "Velocities", velocityBuffer);
+        flowNoiseCompute.SetBuffer(flowKernelID, "InitialPositions", initialPositionBuffer);
+
         // Init compute
         ComputeHelper.SetBuffer(compute, positionBuffer, "Positions", externalForcesKernel, updatePositionKernel);
         ComputeHelper.SetBuffer(compute, predictedPositionBuffer, "PredictedPositions", externalForcesKernel, spatialHashKernel, densityKernel, pressureKernel, viscosityKernel);
@@ -129,6 +137,8 @@ public class Simulation2D : MonoBehaviour
             isPaused = true;
             pauseNextFrame = false;
         }
+
+        enableSmoothReturn = Input.GetKey(KeyCode.B);
 
         HandleInput();
     }
@@ -204,6 +214,9 @@ public class Simulation2D : MonoBehaviour
         flowNoiseCompute.SetFloat("time", Time.time);
         flowNoiseCompute.SetFloat("deltaTime", deltaTime);
         flowNoiseCompute.SetInt("numParticles", numParticles);
+        flowNoiseCompute.SetBool("enableSmoothReturn", enableSmoothReturn);
+        flowNoiseCompute.SetFloat("smoothReturnSpeed", smoothReturnSpeed);
+        flowNoiseCompute.SetFloat("stopThreshold", stopThreshold);
     }
 
     void SetInitialBufferData(ParticleSpawner.ParticleSpawnData spawnData)

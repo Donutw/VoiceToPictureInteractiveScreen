@@ -3,14 +3,18 @@
 
 RWStructuredBuffer<float2> Positions; 
 RWStructuredBuffer<float2> Velocities; 
-
+RWStructuredBuffer<float2> InitialPositions;
 
 bool enableNoiseFlow;
 float noiseScale;
 float noiseStrength;
 float noiseSpeed;
-float time;
 
+bool enableSmoothReturn;
+float smoothReturnSpeed;
+float stopThreshold;
+
+float time;
 float deltaTime;
 int numParticles;
 
@@ -58,24 +62,39 @@ void FlowKernel(uint id : SV_DispatchThreadID)
 {
     if (id >= numParticles)
         return;
-    
-    // Read current particle position and velocity
+
     float2 pos = Positions[id];
     float2 vel = Velocities[id];
-    
-    // If noise flow is enabled, apply curl noise force
-    if (enableNoiseFlow)
+
+    if (enableNoiseFlow && !enableSmoothReturn)
     {
-        // Compute the noise input based on particle position, noise scale, and time evolution
         float2 noiseInput = pos * noiseScale + time * noiseSpeed;
-        
-        // Compute curl noise vector at this position
         float2 curl = curlNoise(noiseInput);
-        
-        // Update velocity with noise force scaled by noiseStrength and deltaTime
+        float effectiveNoiseStrength = enableSmoothReturn ? lerp(noiseStrength, 0, saturate(smoothReturnSpeed * deltaTime)) : noiseStrength;
         vel += curl * noiseStrength * deltaTime;
     }
+
+    if (enableSmoothReturn)
+    {
+        float2 initialPos = InitialPositions[id];
+        float distance = length(pos - initialPos);
+
+        // If the particle is very close to its initial position, snap it and set velocity to zero.
+        if (distance < stopThreshold)
+        {
+            pos = initialPos;
+            vel = 0;
+        }
+        else
+        {
+            float t = saturate(smoothReturnSpeed * deltaTime);
+            pos = lerp(pos, initialPos, t);
+            
+            vel *= (1.0 - t);
+        }
+    }
+
     
-    // Write the updated velocity back to the buffer
+    Positions[id] = pos;
     Velocities[id] = vel;
 }
