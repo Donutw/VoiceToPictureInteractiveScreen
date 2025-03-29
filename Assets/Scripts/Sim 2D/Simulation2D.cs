@@ -26,6 +26,7 @@ public class Simulation2D : MonoBehaviour
 
     [Header("References")]
     public ComputeShader compute;
+    public ComputeShader flowNoiseCompute;
     public ParticleSpawner spawner;
     public ParticleDisplay2D display;
 
@@ -45,6 +46,7 @@ public class Simulation2D : MonoBehaviour
     const int pressureKernel = 3;
     const int viscosityKernel = 4;
     const int updatePositionKernel = 5;
+    int flowKernelID;
 
     // State
     bool isPaused;
@@ -54,6 +56,12 @@ public class Simulation2D : MonoBehaviour
     public ComputeBuffer uvBuffer; // 新增uv buffer定义
 
     public int numParticles { get; private set; }
+
+    [Header("Noise Flow Settings")]
+    public bool enableNoiseFlow = true;
+    public float noiseScale = 0.1f;
+    public float noiseStrength = 1.0f;
+    public float noiseSpeed = 0.5f;
 
 
     void Start()
@@ -77,6 +85,10 @@ public class Simulation2D : MonoBehaviour
         // Set buffer data
         SetInitialBufferData(spawnData);
 
+        flowKernelID = flowNoiseCompute.FindKernel("FlowKernel");
+
+        flowNoiseCompute.SetBuffer(flowKernelID, "Positions", positionBuffer);
+        flowNoiseCompute.SetBuffer(flowKernelID, "Velocities", velocityBuffer);
         // Init compute
         ComputeHelper.SetBuffer(compute, positionBuffer, "Positions", externalForcesKernel, updatePositionKernel);
         ComputeHelper.SetBuffer(compute, predictedPositionBuffer, "PredictedPositions", externalForcesKernel, spatialHashKernel, densityKernel, pressureKernel, viscosityKernel);
@@ -140,6 +152,7 @@ public class Simulation2D : MonoBehaviour
     void RunSimulationStep()
     {
         ComputeHelper.Dispatch(compute, numParticles, kernelIndex: externalForcesKernel);
+        flowNoiseCompute.Dispatch(0, Mathf.CeilToInt(numParticles / 256.0f), 1, 1);
         ComputeHelper.Dispatch(compute, numParticles, kernelIndex: spatialHashKernel);
         gpuSort.SortAndCalculateOffsets();
         ComputeHelper.Dispatch(compute, numParticles, kernelIndex: densityKernel);
@@ -182,6 +195,15 @@ public class Simulation2D : MonoBehaviour
         compute.SetVector("interactionInputPoint", mousePos);
         compute.SetFloat("interactionInputStrength", currInteractStrength);
         compute.SetFloat("interactionInputRadius", interactionRadius);
+
+        // 更新 FlowNoise.compute 参数
+        flowNoiseCompute.SetBool("enableNoiseFlow", enableNoiseFlow);
+        flowNoiseCompute.SetFloat("noiseScale", noiseScale);
+        flowNoiseCompute.SetFloat("noiseStrength", noiseStrength);
+        flowNoiseCompute.SetFloat("noiseSpeed", noiseSpeed);
+        flowNoiseCompute.SetFloat("time", Time.time);
+        flowNoiseCompute.SetFloat("deltaTime", deltaTime);
+        flowNoiseCompute.SetInt("numParticles", numParticles);
     }
 
     void SetInitialBufferData(ParticleSpawner.ParticleSpawnData spawnData)

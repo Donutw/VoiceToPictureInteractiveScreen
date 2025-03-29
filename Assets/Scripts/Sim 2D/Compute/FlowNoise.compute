@@ -1,0 +1,81 @@
+#pragma kernel FlowKernel
+
+
+RWStructuredBuffer<float2> Positions; 
+RWStructuredBuffer<float2> Velocities; 
+
+
+bool enableNoiseFlow;
+float noiseScale;
+float noiseStrength;
+float noiseSpeed;
+float time;
+
+float deltaTime;
+int numParticles;
+
+
+float rand(float2 n)
+{
+    return frac(sin(dot(n, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+// Basic noise function with smooth interpolation
+float noise(float2 x)
+{
+    float2 i = floor(x);
+    float2 f = frac(x);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    float a = rand(i);
+    float b = rand(i + float2(1.0, 0.0));
+    float c = rand(i + float2(0.0, 1.0));
+    float d = rand(i + float2(1.0, 1.0));
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+// Function to compute a 2D curl noise vector field
+float2 curlNoise(float2 p)
+{
+    // Small epsilon value for finite differences
+    float eps = 0.01;
+    
+    // Calculate noise values at offset positions
+    float n1 = noise(p + float2(0, eps));
+    float n2 = noise(p - float2(0, eps));
+    float n3 = noise(p + float2(eps, 0));
+    float n4 = noise(p - float2(eps, 0));
+    
+    // Compute partial derivatives using central differences
+    float dNoise_dy = (n1 - n2) / (2.0 * eps);
+    float dNoise_dx = (n3 - n4) / (2.0 * eps);
+    
+    // Return a divergence-free vector field: curl = (dNoise_dy, -dNoise_dx)
+    return float2(dNoise_dy, -dNoise_dx);
+}
+
+[numthreads(256, 1, 1)]
+void FlowKernel(uint id : SV_DispatchThreadID)
+{
+    if (id >= numParticles)
+        return;
+    
+    // Read current particle position and velocity
+    float2 pos = Positions[id];
+    float2 vel = Velocities[id];
+    
+    // If noise flow is enabled, apply curl noise force
+    if (enableNoiseFlow)
+    {
+        // Compute the noise input based on particle position, noise scale, and time evolution
+        float2 noiseInput = pos * noiseScale + time * noiseSpeed;
+        
+        // Compute curl noise vector at this position
+        float2 curl = curlNoise(noiseInput);
+        
+        // Update velocity with noise force scaled by noiseStrength and deltaTime
+        vel += curl * noiseStrength * deltaTime;
+    }
+    
+    // Write the updated velocity back to the buffer
+    Velocities[id] = vel;
+}
