@@ -18,6 +18,29 @@ public class BackgroundImageController : MonoBehaviour
     // 内部计时器，用于计算 B 键按下的时间
     private float returnTimer = 0f;
 
+    public ParticleDisplay2D particleDisplay;
+
+    void OnEnable()
+    {
+        if (particleDisplay != null)
+        {
+            particleDisplay.OnCurrentTextureChanged += UpdateBackgroundTexture;
+        }
+    }
+
+    void OnDisable()
+    {
+        if (particleDisplay != null)
+        {
+            particleDisplay.OnCurrentTextureChanged -= UpdateBackgroundTexture;
+        }
+    }
+
+    void UpdateBackgroundTexture(Texture2D newTexture)
+    {
+        backgroundImage.texture = newTexture;
+    }
+
     void Update()
     {
         // 如果 Simulation2D 中启用了平滑回归（按下 B 键）

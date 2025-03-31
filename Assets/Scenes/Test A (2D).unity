@@ -324,6 +324,7 @@ MonoBehaviour:
   fadeInDelay: 2
   fadeInSpeed: 2
   fadeOutSpeed: 3
+  particleDisplay: {fileID: 271053323}
 --- !u!114 &483057304
 MonoBehaviour:
   m_ObjectHideFlags: 0

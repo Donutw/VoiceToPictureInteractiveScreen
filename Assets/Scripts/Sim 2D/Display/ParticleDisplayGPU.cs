@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class ParticleDisplay2D : MonoBehaviour, IDisposable
 {
@@ -32,6 +33,8 @@ public class ParticleDisplay2D : MonoBehaviour, IDisposable
     private int currentImageIndex = 0;         // 当前图片的索引
     private bool isTransitioning = false;      // 标记是否正在切换
     private float transitionProgress = 0f;       // 过渡进度，范围0～1
+
+    public event System.Action<Texture2D> OnCurrentTextureChanged;
 
     public void Init(Simulation2D sim)
 	{
@@ -117,6 +120,9 @@ public class ParticleDisplay2D : MonoBehaviour, IDisposable
         material.SetFloat("_TransitionProgress", 0f);
 
         isTransitioning = false;
+        // 通知监听者
+        if (OnCurrentTextureChanged != null)
+            OnCurrentTextureChanged(imageList[currentImageIndex]);
     }
 
     public static void TextureFromGradient(ref Texture2D texture, int width, Gradient gradient, FilterMode filterMode = FilterMode.Bilinear)
