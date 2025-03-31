@@ -1,6 +1,9 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class ParticleDisplay2D : MonoBehaviour
+public class ParticleDisplay2D : MonoBehaviour, IDisposable
 {
 	public Mesh mesh;
 	public Shader shader;
@@ -23,6 +26,12 @@ public class ParticleDisplay2D : MonoBehaviour
     public Vector2 projectionMinBounds = new Vector2(-10, -10);
     public Vector2 projectionSizeBounds = new Vector2(20, 20);
 
+    public List<Texture2D> imageList;         // Inspector 中可以指定多张图片
+    public float transformationSpeed = 1.0f;    // 过渡速度，可以根据需要调试
+
+    private int currentImageIndex = 0;         // 当前图片的索引
+    private bool isTransitioning = false;      // 标记是否正在切换
+    private float transitionProgress = 0f;       // 过渡进度，范围0～1
 
     public void Init(Simulation2D sim)
 	{
@@ -36,9 +45,23 @@ public class ParticleDisplay2D : MonoBehaviour
 
         argsBuffer = ComputeHelper.CreateArgsBuffer(mesh, sim.positionBuffer.count);
 		bounds = new Bounds(Vector3.zero, Vector3.one * 10000);
-	}
 
-	void LateUpdate()
+        if (imageList != null && imageList.Count > 0)
+        {
+            material.SetTexture("_CurrentTex", imageList[currentImageIndex]);
+        }
+
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.N) && !isTransitioning)
+        {
+            StartCoroutine(TransitionToNextImage());
+        }
+    }
+
+    void LateUpdate()
 	{
 		if (shader != null)
 		{
@@ -62,12 +85,41 @@ public class ParticleDisplay2D : MonoBehaviour
             material.SetInt("_ProjectionMode", (int)projectionMode);
             material.SetVector("_ProjectionBounds", new Vector4(
             projectionMinBounds.x, projectionMinBounds.y,
-            projectionSizeBounds.x, projectionSizeBounds.y
-        ));
+            projectionSizeBounds.x, projectionSizeBounds.y));
+
+            material.SetTexture("_CurrentTex", imageList[currentImageIndex]);
         }
     }
 
-	public static void TextureFromGradient(ref Texture2D texture, int width, Gradient gradient, FilterMode filterMode = FilterMode.Bilinear)
+    IEnumerator TransitionToNextImage()
+    {
+        isTransitioning = true;
+        // 计算下一个图片索引（循环列表）
+        int nextImageIndex = (currentImageIndex + 1) % imageList.Count;
+
+        // 将目标纹理设置为下一个图片
+        material.SetTexture("_TargetTex", imageList[nextImageIndex]);
+
+        transitionProgress = 0f;
+        while (transitionProgress < 1f)
+        {
+            transitionProgress += Time.deltaTime * transformationSpeed;
+            transitionProgress = Mathf.Clamp01(transitionProgress);
+
+            // 将过渡进度传递给 shader（新建一个变量，比如 _TransitionProgress）
+            material.SetFloat("_TransitionProgress", transitionProgress);
+
+            yield return null;
+        }
+        // 过渡完成后，更新当前图片为新图片，并重置过渡进度
+        currentImageIndex = nextImageIndex;
+        material.SetTexture("_CurrentTex", imageList[currentImageIndex]);
+        material.SetFloat("_TransitionProgress", 0f);
+
+        isTransitioning = false;
+    }
+
+    public static void TextureFromGradient(ref Texture2D texture, int width, Gradient gradient, FilterMode filterMode = FilterMode.Bilinear)
 	{
 		if (texture == null)
 		{
@@ -98,13 +150,18 @@ public class ParticleDisplay2D : MonoBehaviour
 		texture.Apply();
 	}
 
-	void OnValidate()
+    void OnValidate()
 	{
 		needsUpdate = true;
 	}
 
 	void OnDestroy()
 	{
-		ComputeHelper.Release(argsBuffer);
+		Dispose();
 	}
+
+    public void Dispose()
+    {
+        ComputeHelper.Release(argsBuffer);
+    }
 }

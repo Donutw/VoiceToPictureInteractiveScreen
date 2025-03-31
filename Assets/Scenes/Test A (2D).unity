@@ -193,8 +193,8 @@ MonoBehaviour:
   noiseScale: 0.5
   noiseStrength: 1
   noiseSpeed: 0.5
-  smoothReturnSpeed: 1.5
-  stopThreshold: 0.8
+  smoothReturnSpeed: 1.2
+  stopThreshold: 0
 --- !u!114 &271053320
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -264,6 +264,10 @@ MonoBehaviour:
   projectionMode: 0
   projectionMinBounds: {x: -9, y: -4.7}
   projectionSizeBounds: {x: 18, y: 9.4}
+  imageList:
+  - {fileID: 2800000, guid: 89f7c4d506a1f3f42bd975707d27ddc9, type: 3}
+  - {fileID: 2800000, guid: 645b5b4f14c57b7499d1f42af769eb15, type: 3}
+  transformationSpeed: 1
 --- !u!1 &483057301
 GameObject:
   m_ObjectHideFlags: 0
@@ -317,7 +321,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   simulation: {fileID: 271053319}
   backgroundImage: {fileID: 483057304}
-  fadeInDelay: 0.5
+  fadeInDelay: 2
   fadeInSpeed: 2
   fadeOutSpeed: 3
 --- !u!114 &483057304

@@ -1,13 +1,14 @@
 Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
     Properties {
-        _MainTex("Main Texture", 2D) = "white" {}
         _StarTex("Star Texture", 2D) = "white" {}
+        _CurrentTex("Current Texture", 2D) = "white" {}
+        _TargetTex ("Target Texture", 2D) = "white" {}
         scale("Scale", Float) = 1.0
         _Blend("Blend Factor", Range(0,1)) = 0.5
         _GlowIntensity("Glow Intensity", Range(1, 5)) = 1.5
         _ProjectionMode("Projection Mode (0=Particle UV, 1=World Projection)", Int) = 0
         _ProjectionBounds("Projection Bounds (xy: min, zw: size)", Vector) = (-10,-10,20,20)
-
+        _TransitionProgress("Transition Progress of picture switch", Range(0,1)) = 0
     }
     SubShader {
         Tags { "RenderType"="Transparent" "Queue"="Transparent" }
@@ -24,7 +25,7 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
 
             // 从 CPU/Compute Shader 传入的数据
             StructuredBuffer<float2> Positions2D;    // 每个粒子的中心位置
-            StructuredBuffer<float2> UVs;            // 每个粒子用来采样 _MainTex 的 UV 坐标
+            StructuredBuffer<float2> UVs;            // 每个粒子用来采样 _CurrentTex 的 UV 坐标
             StructuredBuffer<float2> Velocities;       // 每个粒子的速度
 
             float scale;
@@ -33,10 +34,11 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
             float _GlowIntensity;
             int _ProjectionMode;         // 投影模式控制变量
             float4 _ProjectionBounds;    // 投影区域定义 (minX,minY,sizeX,sizeY)
-
+            float _TransitionProgress;
 
             sampler2D _StarTex;
-            sampler2D _MainTex;
+            sampler2D _CurrentTex;
+            sampler2D _TargetTex;
             Texture2D<float4> ColourMap;
             SamplerState linear_clamp_sampler;
 
@@ -50,7 +52,7 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
             struct v2f {
                 float4 pos : SV_POSITION;
                 float2 localUV : TEXCOORD0;    // 用于生成粒子圆形遮罩
-                float2 instanceUV : TEXCOORD1; // 用于采样 _MainTex 的全局图片
+                float2 instanceUV : TEXCOORD1; // 用于采样 _CurrentTex 的全局图片
                 float gradientFactor : TEXCOORD2; // 根据速度计算的用于采样 ColourMap 的因子
             };
 
@@ -97,20 +99,21 @@ Shader "Custom/Particle2D_UVMapping_CombinedBlended" {
                 float delta = fwidth(sqrt(sqrDst));
                 //float mask = 1 - smoothstep(1 - delta, 1 + delta, sqrDst);
 
-                // 从 _MainTex 中采样图片颜色，使用每个粒子的全局采样 UV
-                float4 imageColor = tex2D(_MainTex, i.instanceUV);
+                // 从 _CurrentTex 中采样图片颜色，使用每个粒子的全局采样 UV
+                float4 imageColor = tex2D(_CurrentTex, i.instanceUV);
+                float4 targetColor = tex2D(_TargetTex, i.instanceUV);
                 // 从 ColourMap 渐变纹理中采样颜色，根据粒子速度（gradientFactor）
                 float4 gradColor = ColourMap.SampleLevel(linear_clamp_sampler, float2(i.gradientFactor, 0.5), 0);
 
                 // 混合图片颜色和渐变颜色，混合比例由 _Blend 控制（0=全图片色，1=全渐变色）
-                float4 finalColor = imageColor * lerp(float4(1,1,1,1), gradColor, _Blend);
+                float4 finalColor = lerp(imageColor, targetColor, _TransitionProgress) * lerp(float4(1,1,1,1), gradColor, _Blend);
 
                 //新增粒子纹理采样
-                  float4 starTexture = tex2D(_StarTex, i.localUV);
-                  finalColor *= starTexture;
+                float4 starTexture = tex2D(_StarTex, i.localUV);
+                finalColor *= starTexture;
 
-                  //额外增加自发光强度（中心更亮）
-                  finalColor.rgb *= lerp(_GlowIntensity, 1.0, starTexture.a);
+                //额外增加自发光强度（中心更亮）
+                finalColor.rgb *= lerp(_GlowIntensity, 1.0, starTexture.a);
                 // 将混合后的颜色的 alpha 乘以圆形遮罩，使得粒子呈现圆形
                 //finalColor.a *= mask;
 
