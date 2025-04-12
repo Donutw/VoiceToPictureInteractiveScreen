@@ -792,7 +792,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   selectedMic: 
   sampleRate: 44100
-  silenceThreshold: 0.0025
+  silenceThreshold: 0.01
   loudCheckPeriod: 0.3
   requiredLoudRatio: 0.6
   silenceCheckPeriod: 1.2
