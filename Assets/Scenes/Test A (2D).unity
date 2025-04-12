@@ -266,8 +266,6 @@ MonoBehaviour:
   projectionSizeBounds: {x: 18, y: 9.4}
   imageList:
   - {fileID: 2800000, guid: 89f7c4d506a1f3f42bd975707d27ddc9, type: 3}
-  - {fileID: 2800000, guid: 645b5b4f14c57b7499d1f42af769eb15, type: 3}
-  - {fileID: 2800000, guid: 361da5df0612f8b499d11cdbaf1cb79f, type: 3}
   transformationSpeed: 1
 --- !u!1 &483057301
 GameObject:
@@ -771,6 +769,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1314062776}
   - component: {fileID: 1314062775}
+  - component: {fileID: 1314062777}
+  - component: {fileID: 1314062778}
   m_Layer: 0
   m_Name: voicTOtext
   m_TagString: Untagged
@@ -813,6 +813,35 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1314062777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1314062774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68ee600022ac71c4ab67c4942459d524, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1314062778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1314062774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dabcec4d22318054f9772a3538ba91be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  displayImage: {fileID: 483057304}
+  promptFolderPath: C:/Users/Newuser/Desktop/Fluid-Sim/Transcripts
+  workflowPath: Assets/StreamingAssets/comfy_prompt.json
+  comfyURL: http://127.0.0.1:8188/prompt
+  outputImagePath: D:/AI/ComfyUI-master/output
 --- !u!1 &1700798792
 GameObject:
   m_ObjectHideFlags: 0
