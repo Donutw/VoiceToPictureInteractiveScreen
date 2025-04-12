@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,19 +20,19 @@ public class ParticleDisplay2D : MonoBehaviour, IDisposable
 	Texture2D gradientTexture;
 	bool needsUpdate;
 
-    // ĞÂÔöÊôĞÔ£¬¾ö¶¨Í¶Ó°Ä£Ê½
+    // æ–°å¢å±æ€§ï¼Œå†³å®šæŠ•å½±æ¨¡å¼
     public enum ProjectionMode { ParticleUV = 0, WorldProjection = 1 };
     public ProjectionMode projectionMode;
-    // Á£×ÓÇøÓò±ß½ç (¸ù¾İÄãµÄÁ£×Ó³õÊ¼·Ö²¼ÇøÓòÌîĞ´»ò¼ÆËã)
+    // ç²’å­åŒºåŸŸè¾¹ç•Œ (æ ¹æ®ä½ çš„ç²’å­åˆå§‹åˆ†å¸ƒåŒºåŸŸå¡«å†™æˆ–è®¡ç®—)
     public Vector2 projectionMinBounds = new Vector2(-10, -10);
     public Vector2 projectionSizeBounds = new Vector2(20, 20);
 
-    public List<Texture2D> imageList;         // Inspector ÖĞ¿ÉÒÔÖ¸¶¨¶àÕÅÍ¼Æ¬
-    public float transformationSpeed = 1.0f;    // ¹ı¶ÉËÙ¶È£¬¿ÉÒÔ¸ù¾İĞèÒªµ÷ÊÔ
+    Texture2D currentTex;
+    public float transformationSpeed = 1.0f;    // è¿‡æ¸¡é€Ÿåº¦ï¼Œå¯ä»¥æ ¹æ®éœ€è¦è°ƒè¯•
 
-    private int currentImageIndex = 0;         // µ±Ç°Í¼Æ¬µÄË÷Òı
-    private bool isTransitioning = false;      // ±ê¼ÇÊÇ·ñÕıÔÚÇĞ»»
-    private float transitionProgress = 0f;       // ¹ı¶É½ø¶È£¬·¶Î§0¡«1
+    private int currentImageIndex = 0;         // å½“å‰å›¾ç‰‡çš„ç´¢å¼•
+    private bool isTransitioning = false;      // æ ‡è®°æ˜¯å¦æ­£åœ¨åˆ‡æ¢
+    private float transitionProgress = 0f;       // è¿‡æ¸¡è¿›åº¦ï¼ŒèŒƒå›´0ï½1
 
     public event System.Action<Texture2D> OnCurrentTextureChanged;
 
@@ -43,24 +43,16 @@ public class ParticleDisplay2D : MonoBehaviour, IDisposable
 		material.SetBuffer("Velocities", sim.velocityBuffer);
 		material.SetBuffer("DensityData", sim.densityBuffer);
 
-        // ĞÂÔöµÄUV×ø±êÊı¾İ´«µİ
+        // æ–°å¢çš„UVåæ ‡æ•°æ®ä¼ é€’
         material.SetBuffer("UVs", sim.uvBuffer);
 
         argsBuffer = ComputeHelper.CreateArgsBuffer(mesh, sim.positionBuffer.count);
 		bounds = new Bounds(Vector3.zero, Vector3.one * 10000);
 
-        if (imageList != null && imageList.Count > 0)
+        currentTex = CurrentImageController.Instance?.GetCurrentImage();
+        if (!isTransitioning && currentTex != null)
         {
-            material.SetTexture("_CurrentTex", imageList[currentImageIndex]);
-        }
-
-    }
-
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.N) && !isTransitioning)
-        {
-            StartCoroutine(TransitionToNextImage());
+            material.SetTexture("_CurrentTex", currentTex);
         }
     }
 
@@ -84,46 +76,76 @@ public class ParticleDisplay2D : MonoBehaviour, IDisposable
 			material.SetFloat("scale", scale);
 			material.SetFloat("velocityMax", velocityDisplayMax);
             material.SetFloat("_Blend", blend);
-            // ĞÂÔö£ºÇĞ»»Í¶Ó°Ä£Ê½
+            // æ–°å¢ï¼šåˆ‡æ¢æŠ•å½±æ¨¡å¼
             material.SetInt("_ProjectionMode", (int)projectionMode);
             material.SetVector("_ProjectionBounds", new Vector4(
             projectionMinBounds.x, projectionMinBounds.y,
             projectionSizeBounds.x, projectionSizeBounds.y));
 
-            material.SetTexture("_CurrentTex", imageList[currentImageIndex]);
+            material.SetTexture("_CurrentTex", currentTex);
         }
     }
+    public void SetImage(Texture2D tex)
+    {
+        StartCoroutine(TransitionToSpecificImage(tex));
+    }
 
-    IEnumerator TransitionToNextImage()
+    public IEnumerator TransitionToSpecificImage(Texture2D newTex)
     {
         isTransitioning = true;
-        // ¼ÆËãÏÂÒ»¸öÍ¼Æ¬Ë÷Òı£¨Ñ­»·ÁĞ±í£©
-        int nextImageIndex = (currentImageIndex + 1) % imageList.Count;
 
-        // ½«Ä¿±êÎÆÀíÉèÖÃÎªÏÂÒ»¸öÍ¼Æ¬
-        material.SetTexture("_TargetTex", imageList[nextImageIndex]);
+        material.SetTexture("_TargetTex", newTex);
 
         transitionProgress = 0f;
         while (transitionProgress < 1f)
         {
             transitionProgress += Time.deltaTime * transformationSpeed;
             transitionProgress = Mathf.Clamp01(transitionProgress);
-
-            // ½«¹ı¶É½ø¶È´«µİ¸ø shader£¨ĞÂ½¨Ò»¸ö±äÁ¿£¬±ÈÈç _TransitionProgress£©
             material.SetFloat("_TransitionProgress", transitionProgress);
-
             yield return null;
         }
-        // ¹ı¶ÉÍê³Éºó£¬¸üĞÂµ±Ç°Í¼Æ¬ÎªĞÂÍ¼Æ¬£¬²¢ÖØÖÃ¹ı¶É½ø¶È
-        currentImageIndex = nextImageIndex;
-        material.SetTexture("_CurrentTex", imageList[currentImageIndex]);
-        material.SetFloat("_TransitionProgress", 0f);
 
+        material.SetTexture("_CurrentTex", newTex);
+        material.SetFloat("_TransitionProgress", 0f);
         isTransitioning = false;
-        // Í¨Öª¼àÌıÕß
-        if (OnCurrentTextureChanged != null)
-            OnCurrentTextureChanged(imageList[currentImageIndex]);
+
+        // ğŸ‘‡ åˆ«å†åŠ  imageListï¼Œç›´æ¥æ›´æ–° CurrentImageController
+        CurrentImageController.Instance.UpdateImage(newTex);
+
+        OnCurrentTextureChanged?.Invoke(newTex);
     }
+
+
+    //IEnumerator TransitionToNextImage()
+    //{
+    //    isTransitioning = true;
+    //    // è®¡ç®—ä¸‹ä¸€ä¸ªå›¾ç‰‡ç´¢å¼•ï¼ˆå¾ªç¯åˆ—è¡¨ï¼‰
+    //    int nextImageIndex = (currentImageIndex + 1) % imageList.Count;
+
+    //    // å°†ç›®æ ‡çº¹ç†è®¾ç½®ä¸ºä¸‹ä¸€ä¸ªå›¾ç‰‡
+    //    material.SetTexture("_TargetTex", imageList[nextImageIndex]);
+
+    //    transitionProgress = 0f;
+    //    while (transitionProgress < 1f)
+    //    {
+    //        transitionProgress += Time.deltaTime * transformationSpeed;
+    //        transitionProgress = Mathf.Clamp01(transitionProgress);
+
+    //        // å°†è¿‡æ¸¡è¿›åº¦ä¼ é€’ç»™ shaderï¼ˆæ–°å»ºä¸€ä¸ªå˜é‡ï¼Œæ¯”å¦‚ _TransitionProgressï¼‰
+    //        material.SetFloat("_TransitionProgress", transitionProgress);
+
+    //        yield return null;
+    //    }
+    //    // è¿‡æ¸¡å®Œæˆåï¼Œæ›´æ–°å½“å‰å›¾ç‰‡ä¸ºæ–°å›¾ç‰‡ï¼Œå¹¶é‡ç½®è¿‡æ¸¡è¿›åº¦
+    //    currentImageIndex = nextImageIndex;
+    //    material.SetTexture("_CurrentTex", imageList[currentImageIndex]);
+    //    material.SetFloat("_TransitionProgress", 0f);
+
+    //    isTransitioning = false;
+    //    // é€šçŸ¥ç›‘å¬è€…
+    //    if (OnCurrentTextureChanged != null)
+    //        OnCurrentTextureChanged(imageList[currentImageIndex]);
+    //}
 
     public static void TextureFromGradient(ref Texture2D texture, int width, Gradient gradient, FilterMode filterMode = FilterMode.Bilinear)
 	{
