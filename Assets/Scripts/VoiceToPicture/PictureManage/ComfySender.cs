@@ -20,7 +20,7 @@ public class ComfySender : MonoBehaviour
 
     private string lastProcessedFile = "";
 
-    private System.Diagnostics.Process comfyProcess;
+    [HideInInspector]public System.Diagnostics.Process comfyProcess;
 
     void Start()
     {

@@ -35,8 +35,10 @@ public class AutoVoiceRecorder : MonoBehaviour
     float cooldownTimer = 0f;
     public float cooldownDuration = 1.0f;
 
+    public ComfySender comfySender; // 拖入 ComfySender 脚本引用
+
     [HideInInspector]
-    public float latestMicVolume = 0f;//传给可视化使用的
+    public float latestMicVolume = 0f;//传给可视化使用的,已弃置
 
     void Start()
     {
@@ -60,6 +62,7 @@ public class AutoVoiceRecorder : MonoBehaviour
 
     void StartMic()
     {
+        if (comfySender != null && comfySender.comfyProcess != null && !comfySender.comfyProcess.HasExited) return;
         recordingClip = Microphone.Start(selectedMic, true, maxRecordSeconds, sampleRate);
         micPosition = 0;
         UnityEngine.Debug.Log("🎧 开始新一轮监听...");
@@ -68,8 +71,9 @@ public class AutoVoiceRecorder : MonoBehaviour
 
     void Update()
     {
+        if (comfySender != null && comfySender.comfyProcess != null && !comfySender.comfyProcess.HasExited) return;
         if (isCalibrating) return; // 正在校准时不做任何录音判断
-        if (cooldownTimer > 0f)
+            if (cooldownTimer > 0f)
         {
             cooldownTimer -= Time.deltaTime;
             return;
