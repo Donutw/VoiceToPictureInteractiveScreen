@@ -16,7 +16,7 @@ public class AutoVoiceRecorder : MonoBehaviour
     [Range(0f, 1f)] public float requiredLoudRatio = 0.6f; // 比例阈值：至少 60% 的非零帧音量高于 silenceThreshold
     public float rollingSilenceDuration = 1.2f;
     [Range(0f, 1f)] public float requiredSilenceRatio = 0.8f; // 比如过去1.2秒中80%是静音就结束录音
-    public float sampleDuration = 5f; // 安静检测时间
+    public float sampleDuration = 10f; // 安静检测时间
 
     private bool isRecording = false;
 
@@ -152,10 +152,30 @@ public class AutoVoiceRecorder : MonoBehaviour
                 }
             }
         }
-
-        
+        CheckTranscriptForTrigger();
     }
-    IEnumerator CalibrateSilenceThreshold(float _sampleDuration)
+    void CheckTranscriptForTrigger()
+    {
+        string folder = Application.dataPath + "/../Transcripts";
+        if (!Directory.Exists(folder)) return;
+
+        string[] files = Directory.GetFiles(folder, "*.txt");
+        foreach (string file in files)
+        {
+            string text = File.ReadAllText(file, System.Text.Encoding.UTF8);
+            if (text.Contains("开始检测") || text.ToLower().Contains("start calibration"))
+            {
+                Debug.Log($"🗣️ 触发重设灵敏度指令，来源文件: {Path.GetFileName(file)}");
+                StartCoroutine(CalibrateSilenceThreshold());
+
+                // 防止重复触发：重命名或删除
+                File.Delete(file); // 或者 File.Move(file, file + ".processed");
+                break; // 一次只触发一个
+            }
+        }
+    }
+
+    IEnumerator CalibrateSilenceThreshold(float _sampleDuration = 10f)
     {
         List<float> samples = new List<float>();
         float timer = 0f;

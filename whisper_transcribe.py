@@ -28,12 +28,17 @@ while True:
                 print(f"New file: {f}")
                 result = model.transcribe(path)
                 text = result["text"].strip()
+                if "开始检测" in text or "start calibration" in text.lower():
+                    with open("Trigger_Calibration.flag", "w", encoding="utf-8") as flag:
+                        flag.write("triggered")
 
                 if text and count_meaningful_words(text) > 3:
-                    txt_path = os.path.join("Transcripts", f.replace(".wav", ".txt"))
                     os.makedirs("Transcripts", exist_ok=True)
-                    with open(txt_path, "w", encoding="utf-8") as out:
+                    temp_path = os.path.join("Transcripts", f.replace(".wav", ".txt.temp"))
+                    with open(temp_path, "w", encoding="utf-8") as out:
                         out.write(text)
+                    txt_path = temp_path.replace(".txt.temp", ".txt")
+                    os.rename(temp_path, txt_path)
                     print(f"Saved: {txt_path}")
                 else:
                     print("Ignored empty or short result")
