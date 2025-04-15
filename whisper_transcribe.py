@@ -2,6 +2,14 @@
 import os
 import time
 import whisper
+import re
+
+
+def count_meaningful_words(text):
+    chinese_chars = re.findall(r'[\u4e00-\u9fff]', text)
+    english_words = re.findall(r'\b[a-zA-Z]{2,}\b', text)
+    return len(chinese_chars) + len(english_words)
+
 
 model = whisper.load_model("small")
 watched_dir = "AudioInput"
@@ -21,7 +29,7 @@ while True:
                 result = model.transcribe(path)
                 text = result["text"].strip()
 
-                if text and len(text) >= 3:
+                if text and count_meaningful_words(text) > 3:
                     txt_path = os.path.join("Transcripts", f.replace(".wav", ".txt"))
                     os.makedirs("Transcripts", exist_ok=True)
                     with open(txt_path, "w", encoding="utf-8") as out:

@@ -4,6 +4,9 @@ using UnityEngine.UI;
 using System.Collections;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Net;
+
 
 public class ComfySender : MonoBehaviour
 {
@@ -19,60 +22,65 @@ public class ComfySender : MonoBehaviour
 
     private System.Diagnostics.Process comfyProcess;
 
-    //void Start()
-    //{
-    //    StartComfyUI();
-    //}
-    //void StartComfyUI()
-    //{
-    //    try
-    //    {
-    //        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-    //        startInfo.FileName = "C:\\Users\\Newuser\\AppData\\Local\\Programs\\Python\\Python313\\python.exe";
-    //        startInfo.Arguments = "main.py";
-    //        startInfo.WorkingDirectory = "D:\\AI\\ComfyUI-master"; // 替换成你实际路径
-    //        startInfo.UseShellExecute = false;
-    //        startInfo.CreateNoWindow = true;
-    //        startInfo.RedirectStandardOutput = true;
-    //        startInfo.RedirectStandardError = true;
-    //        startInfo.EnvironmentVariables["VRAM_MODE"] = "LOW";
+    void Start()
+    {
+        if (IsPortInUse(8188))
+        {
+            Debug.Log("🟡 ComfyUI 已经运行中，跳过启动");
+            return;
+        }
+        StartComfyUI();
+    }
+    void StartComfyUI()
+    {
+        try
+        {
+            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+            startInfo.FileName = "C:\\Users\\Newuser\\AppData\\Local\\Programs\\Python\\Python313\\python.exe";
+            startInfo.Arguments = "main.py";
+            startInfo.WorkingDirectory = "D:\\AI\\ComfyUI-master"; // 替换成你实际路径
+            startInfo.UseShellExecute = false;
+            startInfo.CreateNoWindow = true;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+            startInfo.EnvironmentVariables["VRAM_MODE"] = "LOW";
 
-    //        comfyProcess = new System.Diagnostics.Process();
-    //        comfyProcess.StartInfo = startInfo;
-    //        comfyProcess.OutputDataReceived += (s, e) =>
-    //        {
-    //            if (!string.IsNullOrEmpty(e.Data))
-    //            {
-    //                if (e.Data.Contains("loaded completely") || e.Data.Contains("Prompt executed"))
-    //                    Debug.Log("✅ ComfyUI: " + e.Data);
-    //                else
-    //                    Debug.Log("ComfyUI: " + e.Data); // 不是错误！
-    //            }
-    //        };
+            comfyProcess = new System.Diagnostics.Process();
+            comfyProcess.StartInfo = startInfo;
+            comfyProcess.OutputDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    if (e.Data.Contains("loaded completely") || e.Data.Contains("Prompt executed"))
+                        Debug.Log("✅ ComfyUI: " + e.Data);
+                    else
+                        Debug.Log("ComfyUI: " + e.Data); // 不是错误！
+                }
+            };
 
-    //        comfyProcess.ErrorDataReceived += (s, e) =>
-    //        {
-    //            if (!string.IsNullOrEmpty(e.Data))
-    //            {
-    //                if (e.Data.Contains("cudaMalloc"))
-    //                    Debug.LogError("❗️ComfyUI CUDA 错误: " + e.Data);
-    //                else
-    //                    Debug.LogWarning("ComfyUI 输出: " + e.Data); // 不是真 error，只是 stderr
-    //            }
-    //        };
+            comfyProcess.ErrorDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    if (e.Data.Contains("cudaMalloc"))
+                        Debug.LogError("❗️ComfyUI CUDA 错误: " + e.Data);
+                    else
+                        Debug.LogWarning("ComfyUI 输出: " + e.Data); // 不是真 error，只是 stderr
+                }
+            };
 
 
-    //        comfyProcess.Start();
-    //        comfyProcess.BeginOutputReadLine();
-    //        comfyProcess.BeginErrorReadLine();
+            comfyProcess.Start();
+            comfyProcess.BeginOutputReadLine();
+            comfyProcess.BeginErrorReadLine();
 
-    //        Debug.Log("🚀 启动 ComfyUI 成功！");
-    //    }
-    //    catch (System.Exception e)
-    //    {
-    //        Debug.LogError("❌ 启动 ComfyUI 失败：" + e.Message);
-    //    }
-    //}
+            Debug.Log("🚀 启动 ComfyUI 成功！");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("❌ 启动 ComfyUI 失败：" + e.Message);
+        }
+    }
 
     void Update()
     {
@@ -90,7 +98,18 @@ public class ComfySender : MonoBehaviour
             }
         }
     }
-    
+
+    bool IsPortInUse(int port)
+    {
+        IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+        IPEndPoint[] tcpListeners = ipProperties.GetActiveTcpListeners();
+        foreach (var endPoint in tcpListeners)
+        {
+            if (endPoint.Port == port)
+                return true;
+        }
+        return false;
+    }
 
     IEnumerator ProcessPromptFile(string txtPath)
     {
@@ -175,14 +194,14 @@ public class ComfySender : MonoBehaviour
             Debug.Log($"🧹 清空 ComfyUI 输出图像，共删除 {images.Length} 张");
         }
     }
-    //void OnApplicationQuit()
-    //{
-    //    if (comfyProcess != null && !comfyProcess.HasExited)
-    //    {
-    //        comfyProcess.Kill(); // 强制终止
-    //        comfyProcess.Dispose();
-    //        Debug.Log("🛑 已关闭 ComfyUI");
-    //    }
-    //}
+    void OnApplicationQuit()
+    {
+        if (comfyProcess != null && !comfyProcess.HasExited)
+        {
+            comfyProcess.Kill(); // 强制终止
+            comfyProcess.Dispose();
+            Debug.Log("🛑 已关闭 ComfyUI");
+        }
+    }
 
 }

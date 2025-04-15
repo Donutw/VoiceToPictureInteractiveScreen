@@ -11,11 +11,12 @@ public class AutoVoiceRecorder : MonoBehaviour
     public int sampleRate = 44100;
 
     [Header("灵敏度设置")]
-    [Range(0.001f, 0.02f)] public float silenceThreshold = 0.01f;     // 小于这个值视为安静
+    [Range(0.001f, 0.03f)] public float silenceThreshold = 0.01f;     // 小于这个值视为安静
     public float loudCheckPeriod = 0.3f; // 在n秒内检查累计说话时长
     [Range(0f, 1f)] public float requiredLoudRatio = 0.6f; // 比例阈值：至少 60% 的非零帧音量高于 silenceThreshold
-    public float silenceCheckPeriod = 0.3f;
+    public float rollingSilenceDuration = 1.2f;
     [Range(0f, 1f)] public float requiredSilenceRatio = 0.8f; // 比如过去1.2秒中80%是静音就结束录音
+    public float sampleDuration = 5f; // 安静检测时间
 
     private bool isRecording = false;
 
@@ -24,11 +25,13 @@ public class AutoVoiceRecorder : MonoBehaviour
 
     private float loudCheckTimer = 0f;
     private List<float> volumeBuffer = new List<float>();
-    private float silenceCheckTimer = 0f;
-    private List<float> silenceVolumeBuffer = new List<float>();
-    
+    private List<float> rollingSilenceBuffer = new List<float>();
+
     private int micPosition = 0;
     private const int maxRecordSeconds = 10;
+
+    float cooldownTimer = 0f;
+    public float cooldownDuration = 1.0f;
 
     [HideInInspector]
     public float latestMicVolume = 0f;//传给可视化使用的
@@ -49,25 +52,30 @@ public class AutoVoiceRecorder : MonoBehaviour
             UnityEngine.Debug.LogWarning("没有检测到麦克风设备！");
             return;
         }
-
         StartMic(); // 开始监听
+        StartCoroutine(CalibrateSilenceThreshold(sampleDuration));
     }
 
     void StartMic()
     {
         recordingClip = Microphone.Start(selectedMic, true, maxRecordSeconds, sampleRate);
         micPosition = 0;
-        //UnityEngine.Debug.Log("🎧 开始新一轮监听...");
+        UnityEngine.Debug.Log("🎧 开始新一轮监听...");
     }
 
 
     void Update()
     {
+        if (cooldownTimer > 0f)
+        {
+            cooldownTimer -= Time.deltaTime;
+            return;
+        }
         if (Microphone.IsRecording(selectedMic))
         {
             latestMicVolume = GetMicVolume();
             float volume = latestMicVolume;
-           
+
             if (!isRecording)
             {
                 loudCheckTimer += Time.deltaTime;
@@ -109,7 +117,7 @@ public class AutoVoiceRecorder : MonoBehaviour
             else
             {
                 totalRecordTime += Time.deltaTime;
-                silenceCheckTimer += Time.deltaTime;
+
 
                 if (totalRecordTime >= maxRecordSeconds - 0.1f)
                 {
@@ -118,32 +126,79 @@ public class AutoVoiceRecorder : MonoBehaviour
                     return;
                 }
 
-                if (volume > 0f) silenceVolumeBuffer.Add(volume);
+                if (volume > 0f)
+                    rollingSilenceBuffer.Add(volume);
 
-                if (silenceCheckTimer >= silenceCheckPeriod)
+                // 控制 buffer 长度不超过 1.2 秒对应的帧数
+                int maxCount = Mathf.RoundToInt(rollingSilenceDuration / Time.deltaTime);
+                if (rollingSilenceBuffer.Count > maxCount)
+                    rollingSilenceBuffer.RemoveAt(0);
+
+                // 每帧判断是否满足静音
+                if (rollingSilenceBuffer.Count > 10)
                 {
-                    List<float> validVolumes = silenceVolumeBuffer.FindAll(v => v > 0f);
+                    int silentCount = rollingSilenceBuffer.FindAll(v => v < silenceThreshold).Count;
+                    float ratio = (float)silentCount / rollingSilenceBuffer.Count;
 
-                    if (validVolumes.Count > 0)
+                    // 可选调试打印
+                    // Debug.Log($"🧪 静音比例: {ratio:P0}");
+
+                    if (ratio >= requiredSilenceRatio && totalRecordTime > 1.0f)
                     {
-                        int silentCount = validVolumes.FindAll(v => v < silenceThreshold).Count;
-                        float ratio = (float)silentCount / validVolumes.Count;
-
-                        //UnityEngine.Debug.Log($"🧪 录音中检测：静音比例 {ratio:P0}");
-
-                        if (ratio >= requiredSilenceRatio && totalRecordTime > 1.0f)
-                        {
-                            UnityEngine.Debug.Log("🛑 检测到说话停止，保存录音");
-                            StopAndSaveRecording();
-                        }
+                        UnityEngine.Debug.Log("🛑 最近 1.2 秒大部分是静音，保存录音");
+                        StopAndSaveRecording();
                     }
 
-                    // 重置判断
-                    silenceCheckTimer = 0f;
-                    silenceVolumeBuffer.Clear();
                 }
             }
         }
+
+        
+    }
+    IEnumerator CalibrateSilenceThreshold(float _sampleDuration)
+    {
+        List<float> samples = new List<float>();
+        float timer = 0f;
+
+        UnityEngine.Debug.Log("📢 开始静音校准，请保持安静...");
+
+        while (timer < _sampleDuration)
+        {
+            float volume = GetMicVolumeSimple();
+            if (volume > 0f) samples.Add(volume); // 只记录非零音量
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        if (samples.Count == 0)
+        {
+            UnityEngine.Debug.LogWarning("⚠️ 校准失败：未检测到有效音量数据");
+            yield break;
+        }
+
+        float average = 0f;
+        foreach (float v in samples) average += v;
+        average /= samples.Count;
+
+        silenceThreshold = average * 1.8f; // 可调节倍数
+        UnityEngine.Debug.Log($"✅ 校准完成！环境音量平均值: {average:F5}，设置的 silenceThreshold: {silenceThreshold:F5}");
+    }
+    public float GetMicVolumeSimple()
+    {
+        if (recordingClip == null) return 0f;
+
+        int sampleCount = 1024;
+        float[] samples = new float[sampleCount];
+        int micPos = Microphone.GetPosition(selectedMic);
+        if (micPos < sampleCount) return 0f;
+
+        recordingClip.GetData(samples, micPos - sampleCount);
+
+        float sum = 0f;
+        for (int i = 0; i < samples.Length; i++)
+            sum += samples[i] * samples[i];
+
+        return Mathf.Sqrt(sum / sampleCount);
     }
 
     public float GetMicVolume()
@@ -184,15 +239,13 @@ public class AutoVoiceRecorder : MonoBehaviour
         return rms;
     }
 
-
-
     void StartActualRecording()
     {
         UnityEngine.Debug.Log("🎙️ 开始录音...");
         isRecording = true;
-        silenceCheckTimer = 0f;
         loudCheckTimer = 0f;
         totalRecordTime = 0f;
+        rollingSilenceBuffer.Clear();
 
         // 停掉当前循环监听录音，开始实际录制（非循环）
         Microphone.End(selectedMic);
@@ -227,6 +280,7 @@ public class AutoVoiceRecorder : MonoBehaviour
 
         WavUtility.Save(trimmedClip, path);
         UnityEngine.Debug.Log("✅ 音频已保存：" + path);
+        cooldownTimer = cooldownDuration;  // 防止立刻又触发新录音
 
         StartMic(); // 保存后进入下一轮监听
     }
