@@ -32,7 +32,7 @@ while True:
                     with open("Trigger_Calibration.flag", "w", encoding="utf-8") as flag:
                         flag.write("triggered")
 
-                if text and count_meaningful_words(text) > 3:
+                if text and count_meaningful_words(text) >= 3:
                     os.makedirs("Transcripts", exist_ok=True)
                     temp_path = os.path.join("Transcripts", f.replace(".wav", ".txt.temp"))
                     with open(temp_path, "w", encoding="utf-8") as out:

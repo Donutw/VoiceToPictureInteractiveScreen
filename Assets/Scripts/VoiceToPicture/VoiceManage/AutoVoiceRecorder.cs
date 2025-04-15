@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.IO;
+using System.Linq;
 
 public class AutoVoiceRecorder : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public class AutoVoiceRecorder : MonoBehaviour
     public float sampleDuration = 10f; // 安静检测时间
 
     private bool isRecording = false;
+    private bool isCalibrating = false;
 
     private AudioClip recordingClip;
     private float totalRecordTime = 0f;
@@ -66,6 +68,7 @@ public class AutoVoiceRecorder : MonoBehaviour
 
     void Update()
     {
+        if (isCalibrating) return; // 正在校准时不做任何录音判断
         if (cooldownTimer > 0f)
         {
             cooldownTimer -= Time.deltaTime;
@@ -158,12 +161,13 @@ public class AutoVoiceRecorder : MonoBehaviour
     {
         string folder = Application.dataPath + "/../Transcripts";
         if (!Directory.Exists(folder)) return;
+        string[] keywords = { "开始检测", "重新检测", "校准灵敏度", "检测" };
 
         string[] files = Directory.GetFiles(folder, "*.txt");
         foreach (string file in files)
         {
             string text = File.ReadAllText(file, System.Text.Encoding.UTF8);
-            if (text.Contains("开始检测") || text.ToLower().Contains("start calibration"))
+            if (keywords.Any(kw => text.Contains(kw)))
             {
                 Debug.Log($"🗣️ 触发重设灵敏度指令，来源文件: {Path.GetFileName(file)}");
                 StartCoroutine(CalibrateSilenceThreshold());
@@ -177,6 +181,13 @@ public class AutoVoiceRecorder : MonoBehaviour
 
     IEnumerator CalibrateSilenceThreshold(float _sampleDuration = 10f)
     {
+        // 🛑 如果正在录音，先结束
+        if (isRecording)
+        {
+            Debug.Log("⚠️ 检测过程中录音未结束，自动终止录音");
+            StopRecordingWithoutSave(); //如果你不想保存
+        }
+        isCalibrating = true;
         List<float> samples = new List<float>();
         float timer = 0f;
 
@@ -202,6 +213,7 @@ public class AutoVoiceRecorder : MonoBehaviour
 
         silenceThreshold = average * 1.8f; // 可调节倍数
         UnityEngine.Debug.Log($"✅ 校准完成！环境音量平均值: {average:F5}，设置的 silenceThreshold: {silenceThreshold:F5}");
+        isCalibrating = false;
     }
     public float GetMicVolumeSimple()
     {
@@ -303,6 +315,13 @@ public class AutoVoiceRecorder : MonoBehaviour
         cooldownTimer = cooldownDuration;  // 防止立刻又触发新录音
 
         StartMic(); // 保存后进入下一轮监听
+    }
+    void StopRecordingWithoutSave()
+    {
+        Debug.Log("🛑 录音强制中断，未保存");
+        isRecording = false;
+        Microphone.End(selectedMic);
+        StartMic(); // 回到监听状态
     }
 }
 
