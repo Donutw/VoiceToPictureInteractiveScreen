@@ -25,6 +25,7 @@ public class Simulation2D : MonoBehaviour
     public float interactionStrength;
 
     [Header("References")]
+    public GestureDetectionRunner runner;
     public ComputeShader compute;
     public ComputeShader flowNoiseCompute;
     public ParticleSpawner spawner;
@@ -58,6 +59,9 @@ public class Simulation2D : MonoBehaviour
     public ComputeBuffer uvBuffer; // 新增uv buffer定义
 
     public int numParticles { get; private set; }
+
+    [Header("Control Setting")]
+    public float Sensity = 1.5f;
 
     [Header("Noise Flow Settings")]
     public bool enableNoiseFlow = true;
@@ -138,7 +142,7 @@ public class Simulation2D : MonoBehaviour
             pauseNextFrame = false;
         }
 
-        enableSmoothReturn = Input.GetKey(KeyCode.B);
+        enableSmoothReturn = runner != null && runner.CurrentGesture is Fist;
 
         HandleInput();
     }
@@ -192,17 +196,24 @@ public class Simulation2D : MonoBehaviour
         compute.SetFloat("SpikyPow3DerivativeScalingFactor", 30 / (Mathf.Pow(smoothingRadius, 5) * Mathf.PI));
         compute.SetFloat("SpikyPow2DerivativeScalingFactor", 12 / (Mathf.Pow(smoothingRadius, 4) * Mathf.PI));
 
-        // Mouse interaction settings:
-        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        bool isPullInteraction = Input.GetMouseButton(0);
-        bool isPushInteraction = Input.GetMouseButton(1);
+        // Interaction settings:
         float currInteractStrength = 0;
-        if (isPushInteraction || isPullInteraction)
+        Vector2 worldPos = Vector2.zero;
+        Gesture gesture;
+        if (runner != null && (gesture = runner.CurrentGesture) != null)
         {
-            currInteractStrength = isPushInteraction ? -interactionStrength : interactionStrength;
+            var pixelWidth = Screen.width;
+            var pixelHeight = Screen.height;
+            var screenPos = runner.CurrentGesturePos;
+            worldPos = Camera.main.ScreenToWorldPoint(screenPos);
+            bool isPullInteraction = gesture is Pinch;
+            bool isPushInteraction = gesture is IndexOpen;
+            if (isPushInteraction || isPullInteraction)
+            {
+                currInteractStrength = isPushInteraction ? -interactionStrength : interactionStrength;
+            }
         }
-
-        compute.SetVector("interactionInputPoint", mousePos);
+        compute.SetVector("interactionInputPoint", worldPos);
         compute.SetFloat("interactionInputStrength", currInteractStrength);
         compute.SetFloat("interactionInputRadius", interactionRadius);
 
@@ -270,15 +281,33 @@ public class Simulation2D : MonoBehaviour
 
         if (Application.isPlaying)
         {
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            bool isPullInteraction = Input.GetMouseButton(0);
-            bool isPushInteraction = Input.GetMouseButton(1);
-            bool isInteracting = isPullInteraction || isPushInteraction;
+            float currInteractStrength = 0;
+            Vector2 mousePos = Vector2.zero;
+            Gesture gesture;
+            bool isPullInteraction = false;
+            bool isPushInteraction = false;
+
+            if (runner != null && (gesture = runner.CurrentGesture) != null)
+            {
+                var pixelWidth = Screen.width;
+                var pixelHeight = Screen.height;
+                var screenPos = runner.CurrentGesturePos;
+                mousePos = Camera.main.ScreenToWorldPoint(screenPos);
+                isPullInteraction = gesture is Pinch;
+                isPushInteraction = gesture is IndexOpen;
+                if (isPushInteraction || isPullInteraction)
+                {
+                    currInteractStrength = isPushInteraction ? -interactionStrength : interactionStrength;
+                }
+            }
+
+            var isInteracting = isPullInteraction || isPushInteraction;
+            Gizmos.color = Color.white;
             if (isInteracting)
             {
                 Gizmos.color = isPullInteraction ? Color.green : Color.red;
-                Gizmos.DrawWireSphere(mousePos, interactionRadius);
             }
+            Gizmos.DrawWireSphere(mousePos, interactionRadius);
         }
 
     }
