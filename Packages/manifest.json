@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "com.github.homuler.mediapipe": "https://github.com/homuler/MediaPipeUnityPlugin.git#v0.10.0",
+        "com.github.homuler.mediapipe": "file:LocalPackages/com.github.homuler.mediapipe-0.16.1.tgz",
         "com.unity.ide.rider": "3.0.24",
         "com.unity.ide.visualstudio": "2.0.20",
         "com.unity.ide.vscode": "1.2.5",
